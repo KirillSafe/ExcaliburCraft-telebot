@@ -6,12 +6,12 @@ from seleniumfolder.parse_info_profile import *
 from parsers.online_check import *
 from seleniumfolder.parse_news import *
 from seleniumfolder.parse_exchange import *
-with open(R'D:\VScode\excalibur bot\data.json', 'r') as file:
+with open('./data.json', 'r') as file:
     db = json.load(file)
 
 
 
-bot = telebot.TeleBot("6429953074:AAHU4Hm05RiptHXq3qq2gZce4XXzt2AJhtE")
+bot = telebot.TeleBot("")
 @bot.message_handler(commands=['help'])
 def help(message):
     result = "Канал бота(новости об обновлениях) - https://t.me/excalburcraftbot_news"
@@ -141,9 +141,11 @@ def search_clan_by_user(message):
         if not found:
             bot.send_message(message.chat.id, 'Увы, я не смог найти ваш клан\nПовторите попытку с учетом регистра\n\n/username_search')
             info_name = get_source(nickname)
-            if info_name != "Пользователь не найден":
-                os.remove("outputPROFILE.png")    
+            if info_name == 1337:
+                print(123)
+                return
             else:
+                print(312)
                 with open('outputPROFILE.png', 'rb') as photo:
                     bot.send_photo(message.chat.id, photo, caption=info_name)
                 return

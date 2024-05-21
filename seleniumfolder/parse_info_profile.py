@@ -31,17 +31,24 @@ def get_source(url):
     online_on_all = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(1) > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > p')
     registration_date = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(1) > div > div:nth-of-type(1) > div > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > p')
 
-    if exp and clan and status and online_on_month and online_on_all and registration_date:
+    if exp and status and online_on_month and online_on_all and registration_date:
         resize_image()
         time.sleep(2)
-        return (f"Опыт: {exp.text}\n"
+        if clan:
+            return (f"Опыт: {exp.text}\n"
                 f"Клан: {clan.text}\n"
                 f"Статус в игре: {status.text}\n"
                 f"Онлайн за месяц: {online_on_month.text}\n"
                 f"Онлайн за все время: {online_on_all.text}\n"
                 f"Дата регистрации: {registration_date.text}\n")
+        else:
+            return (f"Опыт: {exp.text}\n"
+                f"Статус в игре: {status.text}\n"
+                f"Онлайн за месяц: {online_on_month.text}\n"
+                f"Онлайн за все время: {online_on_all.text}\n"
+                f"Дата регистрации: {registration_date.text}\n")
     else:
-        return "Пользователь не найден"
+        return 1337
 
 def resize_image():
     img = Image.open("screenshotPROFILE.png")
