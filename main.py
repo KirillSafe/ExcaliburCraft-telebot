@@ -11,7 +11,7 @@ with open('./data.json', 'r') as file:
 
 
 
-bot = telebot.TeleBot("")
+bot = telebot.TeleBot("6429953074:AAEmRHCdmonK7921fTGZLe1YjeycjBg30II")
 @bot.message_handler(commands=['help'])
 def help(message):
     result = "Канал бота(новости об обновлениях) - https://t.me/excalburcraftbot_news"
@@ -54,7 +54,7 @@ def send_user_list(message):
 
 @bot.message_handler(commands=['list'])
 def list(message):
-    bot.send_message(message.chat.id, "Список всех команд и пояснение к ним:\n/help - Тех.Поддержка\n/list - Список команд\n/start - Начальная команда\n/kabinet - Система личного кабинета с полной информацией о вашем профиле\n/username_search - поиск клана по Никнейму любого человека из него\n/description_search - поиск клана по его описанию\n/clanname_search - поиск клана по его названию\n/news - Последнии новости экскалибура\n/servers - бета команда\n/profile - поиск профиля человека по его Никнейму(Бета,реализовано в /username_search)\n/exchange - Получить информацию о последних ценах Клановой Биржи")
+    bot.send_message(message.chat.id, "Список всех команд и пояснение к ним:\n/help - Тех.Поддержка\n/list - Список команд\n/start - Начальная команда\n/kabinet - Система личного кабинета с полной информацией о вашем профиле\n/username_search - поиск клана по Никнейму любого человека из него\n/description_search - поиск клана по его описанию\n/clanname_search - поиск клана по его названию\n/news - Последнии новости экскалибура\n/servers - Онлайн и последний вайп серверов\n/profile - поиск профиля человека по его Никнейму(Бета,реализовано в /username_search)\n/exchange - Получить информацию о последних ценах Клановой Биржи")
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -222,9 +222,10 @@ def format_clan_info(clan, clan_data):
 def online(message):
     try:
         user_id = str(message.from_user.id)
-        bot.send_message(message.chat.id, beta_parse())
+        bot.send_message(message.chat.id, beta_parse(), parse_mode='Markdown')
     except Exception as e:
         error_send_message(user_id, "/servers", e)
+
 def beta_parse():
     txt = []
     txt.append(parse_online_players())
@@ -234,9 +235,17 @@ def beta_parse():
     txt.append("\n")
     txt.append("Онлайн серверов:")
     txt.append("\n")
-    txt.append(parse_online_servers())
+    
+    servers_info = parse_online_servers()
+    for server in servers_info:
+        txt.append(f"`{server['Server Name']}` {server['Server Version']}  Вайп: `{server['Wipe Date']}`\n")
+        txt.append(f"Игроки онлайн: {server['Players Online']}/{server['Max Players']}\n")
+        txt.append("\n")
+        
+
     result = ''.join(map(str, txt))
     return result
+
 
 
 #parse_info_profile.py импортируем команды
@@ -278,8 +287,11 @@ def exchange(message):
     user_id = str(message.from_user.id)
     try:
         exchange = get_exchange()
-        with open('exchangeoutput.png', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo, caption=exchange)
+        if exchange == "Клановая система находится на технических работах, повторите позже":
+            bot.send_message(message.chat.id, exchange)
+        else:
+            with open('exchangeoutput.png', 'rb') as photo:
+                bot.send_photo(message.chat.id, photo, caption=exchange)
     except Exception as e:
         error_send_message(user_id, "/exchange", e)
 def main():
