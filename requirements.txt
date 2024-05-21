@@ -1,0 +1,6 @@
+telebot
+requests
+BeautifulSoup4
+pillow
+selenium
+webdriver-manager
