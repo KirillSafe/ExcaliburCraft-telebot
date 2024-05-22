@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.options import Options
 import time, os, json
 from PIL import Image
 from bs4 import BeautifulSoup
-with open(R'D:\VScode\excalibur bot\cookies.json', 'r') as f:
+with open('./cookies.json', 'r') as f:
     cookies = json.load(f)
 options = Options()
 options.add_argument("--disable-images")
@@ -39,4 +39,3 @@ def resize_image():
     new_height = height
     img = img.crop((97, 185, 815, new_height - 75)) 
     img.save("exchangeoutput.png")
-    os.remove("exchange.png")

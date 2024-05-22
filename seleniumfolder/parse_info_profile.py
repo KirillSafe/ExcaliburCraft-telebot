@@ -11,7 +11,7 @@ options.add_argument("--disable-images")
 options.add_argument("--disable-webgl")
 options.add_argument("--enable-javascript")
 options.add_argument("--enable-chrome-browser-cloud-management")
-with open(R'D:\VScode\excalibur bot\cookies.json', 'r') as f:
+with open('./cookies.json', 'r') as f:
     cookies = json.load(f)
 def get_source(url):
     print(f"Сделан запрос profile на никнейм {url}")

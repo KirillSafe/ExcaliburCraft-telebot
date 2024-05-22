@@ -6,12 +6,146 @@ from seleniumfolder.parse_info_profile import *
 from parsers.online_check import *
 from seleniumfolder.parse_news import *
 from seleniumfolder.parse_exchange import *
-with open('./data.json', 'r') as file:
-    db = json.load(file)
+with open('config.json', 'r') as file:
+    data = json.load(file)
+token = data['token']
+def get_nickname_from_file(file_name):
+    try:
+        with open(file_name,"r") as file:
+            for line in file:
+                if line.startswith("nickname:"):
+                    nickname = line.strip().split(":")[1]
+                    return nickname
+        return None  # Если nickname не найден
+    except FileNotFoundError:
+        print("Файл не найден")
+        return None
+def get_fun_from_file(file_name):
+    try:
+        with open(file_name, 'r') as file:
+            for line in file:
+                if line.startswith("fun:"):
+                    fun = line.strip().split(":")[1]
+                    return fun
+    except FileNotFoundError:
+        return None
+
+def get_rlk_from_files(file_name):
+    with open(file_name, 'r') as file:
+        for line in file:
+            if line.startswith("rlk:"):
+                return line.strip().split(":")[1]
+    return None
+def get_all_usernames_from_files(file_name):
+    with open(file_name, 'r') as file:
+        for line in file:
+            if line.startswith("nickname:"):
+                return line.strip().split(":")[1]
+    return None
+
+def set_fun_in_file(file_name, fun_value):
+    with open(file_name, 'r') as file:
+        lines = file.readlines()
+
+    with open(file_name, 'w') as file:
+        for line in lines:
+            if line.startswith("fun:"):
+                line = f"fun:{fun_value}\n"
+            file.write(line)
+
+def set_rlk_in_file(file_name, rlk):
+    with open(file_name, 'r') as file:
+        lines = file.readlines()
+
+    with open(file_name, 'w') as file:
+        for line in lines:
+            if line.startswith("rlk:"):
+                line = f"rlk:{rlk}\n"
+            file.write(line)
+
+bot = telebot.TeleBot(token)
 
 
 
-bot = telebot.TeleBot("6429953074:AAEmRHCdmonK7921fTGZLe1YjeycjBg30II")
+@bot.message_handler(commands=['click'])
+def click_command(message):
+    try:
+        user_id = str(message.from_user.id)
+        file_name = user_id + ".txt"
+        user_data = get_fun_from_file(file_name)
+        if user_data is None:
+            bot.send_message(message.chat.id, "Вы не зарегистрированы.\nРегистрация - /reg")
+            return
+        if user_data == "False":
+            bot.send_message(message.chat.id, "Вы не зарегистрированы на ивенте.\nРегистрация - /fun")
+        if user_data == "True":
+            rlk_money = get_rlk_from_files(file_name)
+            if rlk_money is not None:
+                rlk_money = int(rlk_money)
+                rlk_money += 1
+                bot.send_message(message.chat.id, f"Ты заработал 1 рлк! Твой баланс теперь {rlk_money}")
+                set_rlk_in_file(file_name, rlk_money)
+    except Exception as e:
+        error_send_message(user_id, "/click", e)
+        
+def get_rlk_from_files(file_name):
+    with open(file_name, 'r') as file:
+        for line in file:
+            if line.startswith("rlk:"):
+                return int(line.strip().split(":")[1])
+    return 0
+
+# Команда для бота /top
+@bot.message_handler(commands=['top'])
+def top_players(message):
+    try:
+        user_id = str(message.from_user.id)
+        file_list = os.listdir()
+        player_rlk = []
+
+        for file_name in file_list:
+            if file_name.endswith('.txt'):
+                user_id = file_name.split('.')[0]
+                rlk = get_rlk_from_files(file_name)
+                nickname = get_nickname_from_file(file_name)
+                print(nickname)
+                if rlk == 0:
+                    continue
+                player_rlk.append((nickname, rlk))
+
+        top_10_players = sorted(player_rlk, key=lambda x: x[1], reverse=True)[:10]
+        top_players_str = "Топ 10 игроков по РЛК:\n"
+        for i, (user_id, rlk) in enumerate(top_10_players):
+            top_players_str += f"{i+1}. Никнейм: {user_id}, РЛК: {rlk}\n"
+
+        bot.reply_to(message, top_players_str)
+    except Exception as e:
+        error_send_message(user_id, "/top", e)
+@bot.message_handler(commands=['fun'])
+def fun_command(message):
+    try:
+        user_id = str(message.from_user.id)
+        file_name = user_id + ".txt"
+        print(file_name)
+        user_data = get_fun_from_file(file_name)
+        print(user_data)
+        if user_data is None:
+            bot.send_message(message.chat.id, "Вы не зарегистрированы.\nРегистрация - /reg")
+            return
+        if user_data == "False":
+            bot.send_message(message.chat.id, "Подожди, регистрирую тебя в ивенте")
+            time.sleep(1)
+            set_fun_in_file(file_name, True)
+            bot.send_message(message.chat.id, "Окей...")
+            time.sleep(1)
+            with open('thanks.png', 'rb') as photo:
+                bot.send_photo(message.chat.id, photo, caption="Напиши еще раз команду /fun")
+        if user_data == "True":
+            rlk_money = get_rlk_from_files(file_name)
+            bot.send_message(message.chat.id, f'Привет, ты попал на новый локальный "ивент"\nОшибки насчет его наверное расматриватся не будут,сделан ради потешки\nТвой баланс: {rlk_money} РЛК\n\nКоманда для заработка: /click\nТоп-Игроков /top')
+        
+    except Exception as e:
+        error_send_message(user_id, "/fun", e)
 @bot.message_handler(commands=['help'])
 def help(message):
     result = "Канал бота(новости об обновлениях) - https://t.me/excalburcraftbot_news"
@@ -22,89 +156,107 @@ def registration(message):
     try:
         nickname = message.text.split(' ', 1)
         user_id = str(message.from_user.id)  # Convert user ID to a string
-        if user_id not in db.keys():
-            if len(nickname) > 1:
-                nickname_yes = nickname[1]
-                db[user_id] = nickname_yes
-                with open('data.json', 'w') as file:
-                    json.dump(db, file)
-                bot.reply_to(message, "Вы успешно зарегистрировались\n\n/kabinet")
-                print("Новый юзер" + db[user_id])
-            else:
-                bot.reply_to(message, "Укажите никнейм с учетом регистра после /reg {text}\n\nДля удаления профиля введите команду заного")
+        file_name = user_id + ".txt"
+        try:
+            with open(file_name, 'r') as file:
+                data = file.read()
+                if data:  # Если файл не пустой, значит пользователь уже зарегистрирован
+                    bot.reply_to(message, "Ваш профиль успешно не удален")
+                    return
+        except FileNotFoundError:
+            pass  # Продолжаем регистрацию, если файл не найден
+
+        if len(nickname) > 1:
+            nickname_yes = nickname[1]
+            with open(file_name, 'w') as file:
+                file.write("nickname:" + nickname_yes + "\nfun:False" + "\nrlk:0")
+            with open('thanks.png', 'rb') as photo:
+                bot.send_photo(message.chat.id, photo, caption="/kabinet\n/fun (НОВИНКА!)")
+            print("Новый юзер " + nickname_yes)
         else:
-            bot.reply_to(message, "Ваш профиль удален, повторите попытку регистрации")
-            del db[user_id]
-            with open('data.json', 'w') as file:
-                json.dump(db, file)
+            bot.reply_to(message, "Укажите никнейм с учетом регистра после /reg {text}\n\nДля удаления профиля введите команду заного")
     except Exception as e:
         error_send_message(user_id, "/reg", e)
+
+
+
 
 @bot.message_handler(commands=['stats'])
 def send_user_list(message):
     try:
         user_id = str(message.from_user.id)
-        user_list = "\n".join(db.values())
-        user_count = len(db)
-        response = f"Список пользователей ({user_count}):\n\n{user_list}"
+        file_names = [file for file in os.listdir() if file.endswith(".txt")]
+        usernames = []
+        for file_name in file_names:
+            username = get_all_usernames_from_files(file_name)
+            if username:
+                usernames.append(username)
+
+        response = f"Список пользователей ({len(usernames)}):\n\n"
+        response += "\n".join(usernames)
         bot.send_message(message.chat.id, response)
+
     except Exception as e:
         error_send_message(user_id, "/stats", e)
-
 
 @bot.message_handler(commands=['list'])
 def list(message):
     bot.send_message(message.chat.id, "Список всех команд и пояснение к ним:\n/help - Тех.Поддержка\n/list - Список команд\n/start - Начальная команда\n/kabinet - Система личного кабинета с полной информацией о вашем профиле\n/username_search - поиск клана по Никнейму любого человека из него\n/description_search - поиск клана по его описанию\n/clanname_search - поиск клана по его названию\n/news - Последнии новости экскалибура\n/servers - Онлайн и последний вайп серверов\n/profile - поиск профиля человека по его Никнейму(Бета,реализовано в /username_search)\n/exchange - Получить информацию о последних ценах Клановой Биржи")
-
+    bot.send_message(message.chat.id, "/click (НОВИНКА)\n/fun (НОВИНКА)\n/top (НОВИНКА)")
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, 'Бот пользуется открытым Excalibur Craft Clan API и selenium:\nСтатус работы: Альфа\nСписок Бета-Команд: /list /servers')
 
 @bot.message_handler(commands=['kabinet'])
 def kabinet(message):
-    try:  
+    try:
         user_id = str(message.from_user.id)
-        if user_id not in db.keys():
-            bot.send_message(message.chat.id, "Вы на данный момент не зарегистрированы в нашей системе, для регистрации введите команду /reg")
-        else:
-            bot.send_message(message.chat.id, "Поиск может занять до 40+ секунд. Ваш никнейм: " + db[user_id])
-
-            data = get_clans_data()
-            all_leaders = []
-            found = False
-            for clan, clan_data in data.items():
-                if "leaders" in clan_data and clan_data["leaders"] is not None and len(clan_data["leaders"]) > 0:
-                    all_leaders.extend(clan_data["leaders"]) 
-                if "trusted" in clan_data and clan_data["trusted"] is not None and len(clan_data["trusted"]) > 0:
-                    all_leaders.extend(clan_data["trusted"])
-                if "officers" in clan_data and clan_data["officers"] is not None and len(clan_data["officers"]) > 0:
-                    all_leaders.extend(clan_data["officers"])
-                if "members" in clan_data and clan_data["members"] is not None and len(clan_data["members"]) > 0:
-                    all_leaders.extend(clan_data["members"])
-                if "newbies" in clan_data and clan_data["newbies"] is not None and len(clan_data["newbies"]) > 0:
-                    all_leaders.extend(clan_data["newbies"])
-
-                if db[user_id] in all_leaders:
-                    found = True
-                    bot.send_message(message.chat.id, format_clan_info(clan, clan_data))
-                    info_name = get_source(db[user_id])
-                    with open('outputPROFILE.png', 'rb') as photo:
-                        bot.send_photo(message.chat.id, photo, caption=info_name)
-                    os.remove("outputPROFILE.png")
-                    break
+        file_name = user_id + ".txt"
+        print(file_name)
+        nickname = get_nickname_from_file(file_name)
+        if nickname == None:
+            bot.send_message(message.chat.id, "Вы не зарегестриованы.\nРегистрация - /reg")
+            return
         
-            if not found:
-                bot.send_message(message.chat.id, "Вы не состоите в клане либо неправильно зарегестрировались, попробуйте заново зарегестрироватся либо войдите в любой клан")
-                info_name = get_source(db[user_id])
-                if info_name != "Пользователь не найден":
-                    with open('outputPROFILE.png', 'rb') as photo:
-                        bot.send_photo(message.chat.id, photo, caption=info_name)
-                    os.remove("outputPROFILE.png")
-                else:
-                    return
+        bot.send_message(message.chat.id, "Поиск может занять до 40+ секунд. Ваш никнейм: ")
+        
+        
+        data = get_clans_data()
+        all_leaders = []
+        found = False
+        
+        for clan, clan_data in data.items():
+            if "leaders" in clan_data and clan_data["leaders"] is not None and len(clan_data["leaders"]) > 0:
+                all_leaders.extend(clan_data["leaders"])
+            if "trusted" in clan_data and clan_data["trusted"] is not None and len(clan_data["trusted"]) > 0:
+                all_leaders.extend(clan_data["trusted"])
+            if "officers" in clan_data and clan_data["officers"] is not None and len(clan_data["officers"]) > 0:
+                all_leaders.extend(clan_data["officers"])
+            if "members" in clan_data and clan_data["members"] is not None and len(clan_data["members"]) > 0:
+                all_leaders.extend(clan_data["members"])
+            if "newbies" in clan_data and clan_data["newbies"] is not None and len(clan_data["newbies"]) > 0:
+                all_leaders.extend(clan_data["newbies"])
+
+            if nickname in all_leaders:
+                found = True
+                bot.send_message(message.chat.id, format_clan_info(clan, clan_data))
+                info_name = get_source(nickname)
+                with open('outputPROFILE.png', 'rb') as photo:
+                    bot.send_photo(message.chat.id, photo, caption=info_name)
+                os.remove("outputPROFILE.png")
+                break
+
+        if not found:
+            bot.send_message(message.chat.id, "Вы не состоите в клане либо неправильно зарегистрировались, попробуйте заново зарегистрироватся либо войдите в любой клан")
+            info_name = get_source(nickname)
+            if info_name != "Пользователь не найден":
+                with open('outputPROFILE.png', 'rb') as photo:
+                    bot.send_photo(message.chat.id, photo, caption=info_name)
+                os.remove("outputPROFILE.png")
+            else:
+                return
     except Exception as e:
         error_send_message(user_id, "/kabinet", e)
-
 @bot.message_handler(commands=['username_search'])
 def search_clan_by_user(message):
     try:
@@ -277,7 +429,7 @@ def news(message):
     try:
         crop_screenshot()
         with open('output.png', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo, caption="Последнии новости экскалибура")
+            bot.send_photo(message.chat.id, photo, caption="Последнии новости экскалибура\nТак-же внутри бота началось фан-ивент. Для регистрации - /fun")
         os.remove("output.png")
     except Exception as e:
         error_send_message(user_id, "/news", e)
@@ -298,7 +450,6 @@ def main():
     while True:
         try:
             print("     Bot succes started!")
-            print(db.keys())
             bot.polling(none_stop=True)
         except Exception as e:
             print(f"Произошла ошибка: {e}")
