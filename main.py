@@ -23,10 +23,13 @@ def get_all_usernames_from_files():
 
 def get_user_data(user_id):
     data = {}
-    with open('users.json', 'r') as file:
-        data = json.load(file)
-    return data['users'][user_id]
-
+    try:
+        with open('users.json', 'r') as file:
+            data = json.load(file)
+        finally_data = data['users'][user_id]
+        return finally_data
+    except KeyError:
+        return None
 
 def set_user_data(user_id, data):
     with open('users.json', 'r') as file:
@@ -123,23 +126,18 @@ def fun_command(message):
     try:
         user_id = str(message.from_user.id)
         user_data = get_user_data(user_id)
-        print(user_data)
         if user_data is None:
-            bot.send_message(message.chat.id,
-                             "Вы не зарегестриованы.\nРегистрация - /reg")
+            bot.send_message(message.chat.id, "Вы не зарегестриованы.\nРегистрация - /reg")
             return
-        if user_data['fun'] == "False":
-            bot.send_message(message.chat.id,
-                             "Подожди, регистрирую тебя в ивенте")
+        if user_data['fun'] == False:
+            bot.send_message(message.chat.id, "Подожди, регистрирую тебя в ивенте")
             time.sleep(1)
             set_fun_in_file(user_id, True)
             bot.send_message(message.chat.id, "Окей...")
             time.sleep(1)
             with open('thanks.png', 'rb') as photo:
-                bot.send_photo(message.chat.id,
-                               photo,
-                               caption="Напиши еще раз команду /fun")
-        if user_data['fun'] == "True":
+                bot.send_photo(message.chat.id, photo, caption="Напиши еще раз команду /fun")
+        if user_data['fun'] == True:
             rlk_money = get_rlk_from_files(user_id)
             bot.send_message(
                 message.chat.id,
