@@ -10,7 +10,7 @@ from seleniumfolder.parse_exchange import *
 with open('config.json', 'r') as file:
     data_token = json.load(file)
 token = data_token['token']
-
+group_id = -1002234144260
 
 def get_all_usernames_from_files():
     with open('users.json', 'r') as file:
@@ -27,7 +27,10 @@ def get_user_data(user_id):
         with open('users.json', 'r') as file:
             data = json.load(file)
         finally_data = data['users'][user_id]
-        return finally_data
+        if finally_data is not None:
+         return finally_data
+        else: 
+            return None
     except KeyError:
         return None
 
@@ -71,19 +74,20 @@ bot = telebot.TeleBot(token)
 # Команда для бота /click
 @bot.message_handler(commands=['click'])
 def click_command(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_data = get_user_data(user_id)
         print(f"Пользователь: {user_id}, данные: {user_data}")
         if user_data is None:
             bot.send_message(message.chat.id,
                              "Вы не зарегистрированы.\nРегистрация - /reg")
             return
-        if user_data['fun'] == "False":
+        if user_data['fun'] == False:
             bot.send_message(
                 message.chat.id,
                 "Вы не зарегистрированы на ивенте.\nРегистрация - /fun")
-        if user_data['fun'] == "True":
+        if user_data['fun'] == True:
             rlk_money = get_rlk_from_files(user_id)
             if rlk_money is not None:
                 rlk_money += 1
@@ -92,12 +96,13 @@ def click_command(message):
                     f"Ты заработал 1 рлк! Твой баланс теперь {rlk_money}")
                 set_rlk_in_file(user_id, rlk_money)
     except Exception as e:
-        error_send_message(user_id, "/click", e)
+        error_send_message(user_id, username_for_debugging, "/click", e)
 
 
 # Команда для бота /top
 @bot.message_handler(commands=['top'])
 def top_players(message):
+    username_for_debugging = message.from_user.username
     try:
         user_id = str(message.from_user.id)
         usernames = get_all_usernames_from_files()
@@ -117,14 +122,15 @@ def top_players(message):
 
         bot.reply_to(message, top_players_str)
     except Exception as e:
-        error_send_message(user_id, "/top", e)
+        error_send_message(user_id, username_for_debugging, "/top", e)
 
 
 # Команда - /fun
 @bot.message_handler(commands=['fun'])
 def fun_command(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_data = get_user_data(user_id)
         if user_data is None:
             bot.send_message(message.chat.id, "Вы не зарегестриованы.\nРегистрация - /reg")
@@ -145,7 +151,7 @@ def fun_command(message):
             )
 
     except Exception as e:
-        error_send_message(user_id, "/fun", e)
+        error_send_message(user_id, username_for_debugging, "/fun", e)
 
 
 # Команда - /help
@@ -158,6 +164,7 @@ def help(message):
 
 @bot.message_handler(commands=['reg'])
 def registration(message):
+    username_for_debugging = message.from_user.username
     user_id = str(message.from_user.id)
     try:
         try:
@@ -167,10 +174,11 @@ def registration(message):
             with open('thanks.png', 'rb') as photo:
                 bot.send_photo(message.chat.id, photo, caption="/kabinet\n/fun (НОВИНКА!)")
             print("Новый юзер " + nickname)
-        except IndexError:
+        except IndexError or AttributeError or TypeError:
             bot.send_message(message.chat.id, f"Введите свой никнейм.\nВаш текущий никнейм никнейм: {data['nickname']}\n\nПример:    /reg KirillSafe")
     except Exception as e:
-        error_send_message(user_id, "/reg", e)
+        bot.send_message(message.chat.id, "Возможная проблема связана с тем что вы не зарегестрированы в системе и пытались зарегестрироватся не введя никнейм.")
+        error_send_message(user_id, username_for_debugging, "/reg", e)
 
 
 
@@ -178,6 +186,7 @@ def registration(message):
 # Команда - /server
 @bot.message_handler(commands=['stats'])
 def send_user_list(message):
+    username_for_debugging = message.from_user.username
     user_id = str(message.from_user.id)
     try:
         usernames = get_all_usernames_from_files()
@@ -186,32 +195,26 @@ def send_user_list(message):
         bot.send_message(message.chat.id, response)
 
     except Exception as e:
-        error_send_message(user_id, "/stats", e)
+        error_send_message(user_id, username_for_debugging, "/stats", e)
 
 
 # Команда - /list
 @bot.message_handler(commands=['list'])
 def list(message):
-    bot.send_message(
-        message.chat.id,
-        "Список всех команд и пояснение к ним:\n/help - Тех.Поддержка\n/list - Список команд\n/start - Начальная команда\n/kabinet - Система личного кабинета с полной информацией о вашем профиле\n/username_search - поиск клана по Никнейму любого человека из него\n/description_search - поиск клана по его описанию\n/clanname_search - поиск клана по его названию\n/news - Последнии новости экскалибура\n/servers - Онлайн и последний вайп серверов\n/profile - поиск профиля человека по его Никнейму(Бета,реализовано в /username_search)\n/exchange - Получить информацию о последних ценах Клановой Биржи"
-    )
-    bot.send_message(message.chat.id,
-                     "/click (НОВИНКА)\n/fun (НОВИНКА)\n/top (НОВИНКА)")
+    bot.send_message(message.chat.id,"Список всех команд и пояснение к ним:\n/help - Тех.Поддержка\n/list - Список команд\n/start - Начальная команда\n/kabinet - Система личного кабинета с полной информацией о вашем профиле\n/username_search - поиск клана по Никнейму любого человека из него\n/description_search - поиск клана по его описанию\n/clanname_search - поиск клана по его названию\n/news - Последнии новости экскалибура\n/servers - Онлайн и последний вайп серверов\n/profile - поиск профиля человека по его Никнейму(Бета,реализовано в /username_search)\n/exchange - Получить информацию о последних ценах Клановой Биржи")
+    bot.send_message(message.chat.id,"/click (НОВИНКА)\n/fun (НОВИНКА)\n/top (НОВИНКА)")
 
 
 # Команда - /start
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(
-        message.chat.id,
-        'Бот пользуется открытым Excalibur Craft Clan API и selenium:\nСтатус работы: Альфа\nСписок Бета-Команд: /list /servers'
-    )
+    bot.send_message(message.chat.id,'Бот пользуется открытым Excalibur Craft Clan API и selenium:\nСтатус работы: Альфа\nСписок Бета-Команд: /list /servers')
 
 
 # Команда - /kabinet
 @bot.message_handler(commands=['kabinet'])
 def kabinet(message):
+    username_for_debugging = message.from_user.username
     user_id = str(message.from_user.id)
     try:
         nickname = get_user_data(user_id)['nickname']
@@ -252,16 +255,17 @@ def kabinet(message):
                 # Удалить сообщение "Поиск может занять до 40+ секунд. Ваш никнейм: {nickname}"
                 bot.delete_message(sent_message.chat.id, sent_message.message_id)
     except Exception as e:
-        error_send_message(user_id, "/kabinet", e)
+        error_send_message(user_id, username_for_debugging, "/kabinet", e)
 
 
 # Команда - /username_search
 @bot.message_handler(commands=['username_search'])
 def search_clan_by_user(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_message = message.text
-        nickname = user_message.replace("/username_search  ", "")
+        nickname = message.text.split(' ')[1]
         print(f"Сделан поиск клана по никнейму: {nickname}")
         data = get_clans_data()
         all_leaders = []
@@ -286,37 +290,32 @@ def search_clan_by_user(message):
 
             if nickname in all_leaders:
                 found = True
-                bot.send_message(message.chat.id,
-                                 format_clan_info(clan, clan_data))
+                bot.send_message(message.chat.id, format_clan_info(clan, clan_data))
                 info_name = get_source(nickname)
                 with open('outputPROFILE.png', 'rb') as photo:
                     bot.send_photo(message.chat.id, photo, caption=info_name)
-                os.remove("outputPROFILE.png")
                 break
 
         if not found:
-            bot.send_message(
-                message.chat.id,
-                'Увы, я не смог найти ваш клан\nПовторите попытку с учетом регистра\n\n/username_search'
-            )
+            bot.send_message(message.chat.id, 'Увы, я не смог найти ваш клан\nПовторите попытку с учетом регистра\n\n/username_search')
             info_name = get_source(nickname)
             if info_name == 1337:
-                print(123)
+                bot.send_message(message.chat.id, "Вы не зарегестрированы на проекте Excalibur Craft")          
                 return
             else:
-                print(312)
                 with open('outputPROFILE.png', 'rb') as photo:
                     bot.send_photo(message.chat.id, photo, caption=info_name)
                 return
     except Exception as e:
-        error_send_message(user_id, "/search_clan_by_name", e)
+        error_send_message(user_id, username_for_debugging, "/search_clan_by_name", e)
 
 
 # Команда - /clanname_search
 @bot.message_handler(commands=['clanname_search'])
 def search_clan_by_name(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_message = message.text
         name = user_message.replace("/username_search ", "")
         print(f"Сделан поиск клана по описанию: {name}")
@@ -334,14 +333,15 @@ def search_clan_by_name(message):
                 message.chat.id,
                 'Увы, я не смог найти ваш клан.\n\n/clanname_search')
     except Exception as e:
-        error_send_message(user_id, "/search_clan_by_name", e)
+        error_send_message(user_id, username_for_debugging, "/search_clan_by_name", e)
 
 
 # Команда - /description_search
 @bot.message_handler(commands=['description_search'])
 def search_clan_by_description(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_message = message.text
         description = user_message.replace("/username_search ", "")
         print(f"Сделан поиск клана по описанию: {description}")
@@ -351,8 +351,7 @@ def search_clan_by_description(message):
         for clan, clan_data in data.items():
             if description.lower() == clan_data['motto'].lower():
                 found = True
-                bot.send_message(message.chat.id,
-                                 format_clan_info(clan, clan_data))
+                bot.send_message(message.chat.id, format_clan_info(clan, clan_data))
 
         if not found:
             bot.send_message(
@@ -360,12 +359,11 @@ def search_clan_by_description(message):
                 'Увы, я не смог найти ваш клан\nПовторите попытку с учетом регистра\n\n/description_search'
             )
     except Exception as e:
-        error_send_message(user_id, "/description_search", e)
+        error_send_message(user_id, username_for_debugging, "/description_search", e)
 
 
 def get_clans_data():
-    response = requests.get(
-        'https://excalibur-craft.ru/engine/ajax/clans/api.php')
+    response = requests.get('https://excalibur-craft.ru/engine/ajax/clans/api.php')
     data = response.json()
     return data
 
@@ -401,11 +399,12 @@ def format_clan_info(clan, clan_data):
 # Команда - /servers
 @bot.message_handler(commands=['servers'])
 def online(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         bot.send_message(message.chat.id, beta_parse(), parse_mode='Markdown')
     except Exception as e:
-        error_send_message(user_id, "/servers", e)
+        error_send_message(user_id, username_for_debugging, "/servers", e)
 
 
 def beta_parse():
@@ -435,8 +434,9 @@ def beta_parse():
 # Команда - /profile
 @bot.message_handler(commands=["profile"])
 def search_profile(message):
+    username_for_debugging = message.from_user.username
+    user_id = str(message.from_user.id)
     try:
-        user_id = str(message.from_user.id)
         user_message = message.text
         name = user_message.replace("/profile ", "")
         if name == "/profile":
@@ -455,12 +455,13 @@ def search_profile(message):
         else:
             return
     except Exception as e:
-        error_send_message(user_id, "/profile", e)
+        error_send_message(user_id, username_for_debugging, "/profile", e)
 
 
 # Команда - /news
 @bot.message_handler(commands=['news'])
 def news(message):
+    username_for_debugging = message.from_user.username
     user_id = str(message.from_user.id)
     try:
         crop_screenshot()
@@ -473,12 +474,13 @@ def news(message):
             )
         os.remove("output.png")
     except Exception as e:
-        error_send_message(user_id, "/news", e)
+        error_send_message(user_id, username_for_debugging, "/news", e)
 
 
 # Команда - /exchange
 @bot.message_handler(commands=['exchange'])
 def exchange(message):
+    username_for_debugging = message.from_user.username
     user_id = str(message.from_user.id)
     try:
         exchange = get_exchange()
@@ -488,17 +490,17 @@ def exchange(message):
             with open('exchangeoutput.png', 'rb') as photo:
                 bot.send_photo(message.chat.id, photo, caption=exchange)
     except Exception as e:
-        error_send_message(user_id, "/exchange", e)
+        error_send_message(user_id, username_for_debugging, "/exchange", e)
 
 
 def main():
     while True:
         try:
-            print("     Bot succes started!")
+            print("     да я заебался, включен я")
             bot.polling(none_stop=True)
         except Exception as e:
             print(f"Произошла ошибка: {e}")
-            time.sleep(15)  # Ждем 15 секунд перед повторным запуском
+            time.sleep(10)
 
 
 def get_time_for_debuging():
@@ -512,13 +514,14 @@ def get_time_for_debuging():
     return f"{ekb_formatted} ЕКБ {msk_formatted} МСК"
 
 
-def error_send_message(user_id, command, e):
+def error_send_message(user_id, username, command, e):
     time = get_time_for_debuging()
-    message = "Отправьте данный лог в тех.поддержку:\n"
+    message = "Произошла непредвиденная ошибка, лог был отправлен Администратору:\n"
     message += f"```python\n{e}\n```\n"
-    message += f"Использовано `{command}` пользователем `{user_id}` в `{time}`"
+    message += f"Использовано `{command}` пользователем `{user_id}` который является `{username}` в `{time}`"
     bot.send_message(user_id, message, parse_mode='Markdown')
-
+    bot.send_message(group_id, message, parse_mode='Markdown')
 
 if __name__ == '__main__':
     main()
+

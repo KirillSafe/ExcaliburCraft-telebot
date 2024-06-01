@@ -10,6 +10,7 @@ options = Options()
 options.add_argument("--disable-images")
 options.add_argument("--disable-webgl")
 options.add_argument("--enable-javascript")
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
 options.add_argument("--enable-chrome-browser-cloud-management")
 with open('./cookies.json', 'r') as f:
     cookies = json.load(f)

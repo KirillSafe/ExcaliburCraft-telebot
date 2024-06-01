@@ -3,13 +3,15 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 import time, os, json
+import re
 from PIL import Image
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, re
 with open('./cookies.json', 'r') as f:
     cookies = json.load(f)
 options = Options()
 options.add_argument("--disable-images")
 options.add_argument("--disable-webgl")
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
 options.add_argument("--enable-javascript")
 options.add_argument("--enable-chrome-browser-cloud-management")
 def get_exchange():
@@ -25,12 +27,12 @@ def get_exchange():
     source_code = driver.page_source
     driver.quit()
     soup = BeautifulSoup(source_code, 'html.parser')
-    info1 = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:nth-of-type(3) > div:nth-of-type(1)')
-    info2 = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(1)')
-    data1 = info1.text
-    data2 = info2.text
-    return (f"{data1}\n"
-        f"{data2}\n")
+    buy = [tag.parent.text for tag in soup.find_all(string=re.compile("запросов на покупку"))]
+    sell = [tag.parent.text for tag in soup.find_all(string=re.compile("предложений на продажу"))]
+    sell_complete = ''.join([char for char in sell if char not in " "])
+    buy_complete = ''.join([char for char in buy if char not in " "])
+    return (f"{buy_complete}\n"
+        f"{sell_complete}\n")      
 
 
 def resize_image():

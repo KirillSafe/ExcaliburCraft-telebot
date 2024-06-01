@@ -8,6 +8,7 @@ options = Options()
 options.add_argument("--disable-images")
 options.add_argument("--disable-webgl")
 options.add_argument("--enable-javascript")
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
 options.add_argument("--enable-chrome-browser-cloud-management")
 def get_screenshot():
     driver = webdriver.Chrome(options=options)
